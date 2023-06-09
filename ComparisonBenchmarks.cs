@@ -1,32 +1,28 @@
 ﻿using System.Text;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 using forsen;
 
 namespace libs_comparison;
-[MemoryDiagnoser(true)]
+
+[MemoryDiagnoser]
+[SimpleJob, SimpleJob(RuntimeMoniker.NativeAot80)]
 public class ComparisonBenchmarks
 {
-    private readonly List<ReadOnlyMemory<byte>> dataLines = new();
-    private readonly List<string> stringLines = new();
+    private byte[][] dataLines = null!;
+    private string[] stringLines = null!;
 
     [GlobalSetup]
     public void AddData()
     {
-        string[] lines = File.ReadLines("data.txt").Take(1000).ToArray();
-
-        foreach (string line in lines)
-        {
-            stringLines.Add(line);
-            dataLines.Add(Encoding.UTF8.GetBytes(line));
-        }
-
-        Console.WriteLine($"Added {dataLines.Count} lines");
+        stringLines = File.ReadLines("data.txt").Take(1000).ToArray();
+        dataLines = stringLines.Select(Encoding.UTF8.GetBytes).ToArray();
     }
 
     [Benchmark]
     public void MiniTwitchParse()
     {
-        foreach (ReadOnlyMemory<byte> item in dataLines)
+        foreach (var item in dataLines)
         {
             MiniTwitch.Process(item);
         }
@@ -40,12 +36,4 @@ public class ComparisonBenchmarks
             TwitchLib.HandleIrcMessage(TwitchLib.ParseIrcMessage(item));
         }
     } */
-
-    [GlobalCleanup]
-    public void Cleanup()
-    {
-        Console.WriteLine($"Clearing {dataLines.Count} lines");
-        dataLines.Clear();
-        stringLines.Clear();
-    }
 }

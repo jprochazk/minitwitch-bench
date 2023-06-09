@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace libs_comparison;
@@ -1638,7 +1639,7 @@ public enum RoomstateType
 }
 
 public readonly record struct IrcTag(ReadOnlyMemory<byte> Key, ReadOnlyMemory<byte> Value);
-public readonly struct IrcTags : IDisposable, IEnumerable
+public readonly struct IrcTags : IDisposable
 {
     public int Count { get; }
     private IrcTag[] Tags { get; }
@@ -1651,17 +1652,11 @@ public readonly struct IrcTags : IDisposable, IEnumerable
 
     public void Dispose() => ArrayPool<IrcTag>.Shared.Return(this.Tags, true);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<IrcTag>.Enumerator GetEnumerator() => this.Tags.AsSpan().GetEnumerator();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(int index, ReadOnlyMemory<byte> Key, ReadOnlyMemory<byte> Value) => this.Tags[index] = new(Key, Value);
-
-    public IEnumerator<IrcTag> GetEnumerator()
-    {
-        for (int x = 0; x < this.Count; x++)
-        {
-            yield return this.Tags[x];
-        }
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 public class IrcClient
